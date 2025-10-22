@@ -1,0 +1,428 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>rezFlix by ruwaid cool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+    <style>
+      :root{
+        --font: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        --bg:#0b0b0f; --panel:#111218; --panel2:#151622; --card:#171828;
+        --text:#f2f3f7; --muted:#b7b8c6; --brand:#ef5466; --ok:#0ea5e9;
+        --safe-top: env(safe-area-inset-top);
+        --safe-bottom: env(safe-area-inset-bottom);
+      }
+      *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+      html,body{ height:100%; }
+      body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); }
+
+      header{
+        display:flex; gap:10px; align-items:center; justify-content:space-between;
+        padding:12px 14px calc(10px + var(--safe-top));
+        padding-top: calc(10px + var(--safe-top));
+        position:sticky; top:0; z-index:20;
+        background:rgba(11,11,15,.85); backdrop-filter: blur(8px);
+        border-bottom:1px solid rgba(255,255,255,.06);
+      }
+      .brand{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+      .title{ font-weight:700; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .sub{ font-weight:300; font-size:11px; color:var(--muted); }
+      .actions{ display:flex; gap:8px; align-items:center; flex:1; justify-content:flex-end; }
+      .search{ flex:1; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:10px 12px; max-width:680px; }
+      .search input{ flex:1; background:transparent; border:none; outline:none; color:var(--text); font:400 14px/1 var(--font); min-width:0; }
+      .btn-credit{ background:var(--ok); color:#fff; border:none; padding:8px 14px; border-radius:8px; font-weight:700; letter-spacing:.2px; cursor:pointer;}
+      select.sort{ display:none; }
+      .sort-btn{
+        display:inline-flex; align-items:center; justify-content:center;
+        background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.1);
+        padding:10px 12px; border-radius:12px; font:600 12px/1 var(--font);
+      }
+
+      .wrap{
+        display:grid; grid-template-columns:1fr;
+        gap:10px;
+        padding:10px 12px calc(12px + var(--safe-bottom));
+        filter: blur(6px); pointer-events:none; user-select:none;
+      }
+      .wrap.unlocked{ filter:none; pointer-events:auto; user-select:auto; }
+
+      .hero{ position:relative; border-radius:14px; overflow:hidden; background:#101018; min-height:140px; display:flex; gap:14px; padding:12px; }
+      .hero-body{ display:flex; flex-direction:column; gap:10px; justify-content:center; flex:1; }
+      .hero-title{ font-weight:700; font-size:22px; }
+      .hero-sub{ font-weight:300; font-size:13px; color:#cfcfe6; }
+      .hero-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+      .hero-play{ background:var(--ok); color:#001018; border:none; padding:10px 14px; border-radius:10px; font-weight:700; cursor:pointer; }
+      .hero-dl{ background:var(--brand); color:#fff; text-decoration:none; padding:10px 14px; border-radius:10px; font-weight:700; }
+
+      .row{ margin-top:8px; }
+      .row-title{ margin:12px 2px 10px; font-size:16px; font-weight:700; }
+      .scroller{ display:grid; grid-auto-flow:column; grid-auto-columns: min(60vw,220px); gap:10px; overflow-x:auto; padding-bottom:6px; }
+      .tcard{ border-radius:12px; background:var(--card); box-shadow:0 0 0 1px rgba(255,255,255,.06) inset; }
+      .tmeta{ padding:10px 14px; font-weight:600; cursor:pointer; }
+
+      .player{ position:relative; background:#000; border-radius:14px; overflow:hidden; }
+      .plyr { width:100%; height:100%; }
+      #player { width:100%; height:56vh; }
+      video { width:100%; height:100%; object-fit:contain; background:#000; }
+
+      .wm{ position:absolute; right:12px; top:12px; z-index:6; pointer-events:none; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:6px 10px; color:#f1f1f1; font:300 12px/1 var(--font); letter-spacing:.4px; display:flex; align-items:center; gap:6px; }
+      .wm-dot{ width:6px; height:6px; border-radius:50%; background:#1ec38b; }
+
+      .fill-mode{ position:fixed; left:0; top:calc(0px + var(--safe-top)); right:0; bottom:0; z-index:30; border-radius:0 !important; background:#000; }
+      .fill-toggle{ position:absolute; left:12px; bottom:12px; z-index:6; padding:10px 12px; border-radius:12px; background:rgba(0,0,0,.35); color:#fff; border:1px solid rgba(255,255,255,.1); font:600 12px/1 var(--font); }
+
+      .player-head{ position:absolute; left:12px; right:12px; top:12px; z-index:7; display:flex; justify-content:space-between; align-items:center; gap:8px; pointer-events:none; }
+      .player-head .pill{ pointer-events:auto; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); color:#fff; font:600 12px/1 var(--font); padding:8px 10px; border-radius:999px; max-width:60%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+      .player-head .download{ pointer-events:auto; background:var(--brand); color:#fff; text-decoration:none; padding:8px 12px; border-radius:999px; font:700 12px/1 var(--font); }
+
+      .empty{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#cfcfe6; font:600 14px/1 var(--font); padding:0 16px; text-align:center; }
+
+      .drawer{ position:fixed; left:0; right:0; bottom:0; z-index:25; transform: translateY(100%); background:#0f0f14; border-top:1px solid rgba(255,255,255,.08); border-radius:14px 14px 0 0; transition: transform .25s ease; max-height:60vh; overflow:auto; padding-bottom:calc(10px + var(--safe-bottom)); }
+      .drawer.show{ transform: translateY(0%); }
+      .drawer-handle{ display:flex; align-items:center; justify-content:center; padding:8px 0; }
+      .handle{ width:44px; height:4px; border-radius:999px; background:#2c2c36; }
+      .drawer-item{ padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.06); }
+
+      .rows{ padding:6px 12px calc(10px + var(--safe-bottom)); }
+      .cards{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+      @media (min-width:600px){ .cards{ grid-template-columns: repeat(3, minmax(0,1fr)); } }
+      @media (min-width:900px){
+        header{ padding:14px 16px; }
+        .btn-credit{ display:inline-flex; }
+        select.sort{ display:inline-flex; background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.1); padding:10px 12px; border-radius:12px; font:600 12px/1 var(--font); }
+        .sort-btn{ display:none; }
+        .wrap{ grid-template-columns: 1fr 320px; gap:16px; }
+        .drawer{ display:none; }
+        .hero{ min-height:180px; }
+      }
+
+      .card{ border-radius:12px; background:var(--card); box-shadow:0 0 0 1px rgba(255,255,255,.06) inset; transition:.18s transform; padding: 10px 18px; font-size: 15px; font-weight: 700; cursor: pointer; }
+      .card:active{ transform:scale(.98); }
+      .name { font-weight: inherit; cursor: inherit; }
+      
+      .splash{ position:fixed; inset:0; background:radial-gradient(1200px 800px at 50% 30%, #181824 0%, #0b0b0f 60%); display:flex; align-items:center; justify-content:center; flex-direction:column; z-index:60; color:#fff; padding:0 16px; }
+      .splash .logo{ font:700 clamp(28px,6vw,42px)/1 var(--font); text-align:center; }
+      .splash .made{ margin-top:10px; font:300 14px/1 var(--font); color:#cfcfe6; }
+      .splash .hint{ margin-top:18px; font:300 12px/1 var(--font); color:#b7b8c6; text-align:center; }
+      .splash.fade{ animation: fadeOut .6s ease forwards; }
+      @keyframes fadeOut { to { opacity:0; visibility:hidden; } }
+
+      .gate{ position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; align-items:center; justify-content:center; z-index:55; padding:16px; }
+      .gate.show{ display:flex; }
+      .gate-card{ width:min(520px, 100%); background:#0f1017; border:1px solid rgba(255,255,255,.12); border-radius:14px; padding:18px; box-shadow:0 20px 60px rgba(0,0,0,.55); }
+      .gate-title{ font:700 18px/1.2 var(--font); margin-bottom:8px; }
+      .gate-desc{ font:300 13px/1.4 var(--font); color:#cfcfe6; margin-bottom:12px; }
+      .gate-row{ display:flex; gap:8px; }
+      .gate-row input{ flex:1; background:#121323; color:#fff; border:1px solid rgba(255,255,255,.12); padding:12px 12px; border-radius:12px; font:500 16px/1 var(--font); }
+      .gate-row button{ background:var(--ok); color:#001018; border:none; padding:12px 14px; border-radius:12px; font:700 14px/1 var(--font); }
+      .gate-err{ color:#ffb4b4; font:600 12px/1 var(--font); margin-top:10px; min-height:14px; }
+      
+      .credit-overlay { display:none; position: fixed; z-index: 9999; inset: 0; backdrop-filter: blur(12px) brightness(.7); background: rgba(10, 18, 34, .58); align-items: center; justify-content: center; }
+      .credit-content { background: rgba(255, 255, 255, 0.07); border-radius: 2em; box-shadow: 0 18px 90px 0 rgba(0, 0, 0, .25); border: 1.5px solid rgba(64, 80, 160, 0.085); padding: 2.7em 3.3em; position: relative; backdrop-filter: blur(24px) brightness(1.24); overflow: hidden; text-align: center; color: #eaf0ff; font-size: 1.6em; font-weight: 700; letter-spacing: .04em; text-shadow: 0 7px 20px #0193fa12; }
+      .credit-background { position: absolute; inset: -50% -50%; background: radial-gradient(ellipse at 30% 10%,rgba(77,196,255,.12),transparent 70%), radial-gradient(ellipse at 98% 90%,rgba(252,65,175,.13),transparent 70%) }
+      .credit-close { margin-top: 2.5em; padding: .7em 2.2em; border-radius: 12px; background: linear-gradient(92deg,#18fdff22,#fc41af22); backdrop-filter: blur(4px); border: 1.5px solid #18fdff44; color: #fff; font-size: 1em; font-weight: 500; box-shadow: 0 6px 22px #fa4 11; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <!-- Splash -->
+    <div class="splash" id="splash">
+      <div class="logo">Rez Flix</div>
+      <div class="made">Made by RuwaidCool</div>
+      <div class="hint">Tap anywhere to continue</div>
+    </div>
+
+    <!-- Invite Gate -->
+    <div class="gate" id="gate">
+      <div class="gate-card">
+        <div class="gate-title">Enter Ruwaid's Invite Code</div>
+        <div class="gate-desc">Access is private. Enter one of the valid invite codes to continue.</div>
+        <div class="gate-row">
+          <input id="gateInput" type="password" placeholder="Invite code..." inputmode="text" autocomplete="off" />
+          <button id="gateBtn">Unlock</button>
+        </div>
+        <div class="gate-err" id="gateErr"></div>
+      </div>
+    </div>
+
+    <header>
+      <div class="brand">
+        <div class="title">rezFlix</div>
+        <div class="sub">by ruwaid cool</div>
+      </div>
+      <div class="actions">
+        <div class="search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#cfcfe6" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 10-.71.71l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0A4.5 4.5 0 1114 9.5 4.5 4.5 0 019.5 14z"/></svg>
+          <input id="searchBox" type="text" placeholder="Search movies..." />
+        </div>
+        <button class="btn-credit" id="creditBtn">Credits</button>
+        <select class="sort" id="sortSel">
+          <option value="az">Sort: A-Z</option>
+          <option value="za">Sort: Z-A</option>
+          <option value="new">Sort: Newest</option>
+          <option value="res">Sort: Resolution</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="wrap" id="mainWrap">
+      <!-- Featured Film -->
+      <section class="hero" id="hero">
+        <div class="hero-body">
+          <div class="hero-title" id="heroTitle"></div>
+          <div class="hero-sub" id="heroSub"></div>
+          <div class="hero-actions">
+            <button class="hero-play" id="heroPlay">Play</button>
+            <a class="hero-dl" id="heroDL" href="#" target="_blank" rel="noopener">Download</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Top 5 -->
+      <section class="row">
+        <div class="row-title">Top 5</div>
+        <div class="scroller" id="top5"></div>
+      </section>
+
+      <!-- Player -->
+      <div class="player" id="playerWrap">
+        <div class="player-head" id="playerHead" style="display:none;">
+          <div class="pill" id="nowTitle"></div>
+          <a class="download" id="nowDownload" href="#" target="_blank" rel="noopener">Open externally</a>
+        </div>
+        <video id="player" playsinline controls></video>
+        <div class="wm"><span class="wm-dot"></span>Dolby Atmos</div>
+        <button class="fill-toggle" id="fillBtn">Fill</button>
+        <div class="empty" id="emptyState">Select a movie to play</div>
+      </div>
+
+      <div class="sidebar" id="sidebar">
+        <div id="playlist"></div>
+      </div>
+    </div>
+
+    <section class="rows">
+      <div class="row-title">Full Library</div>
+      <div class="cards" id="cards"></div>
+    </section>
+
+    <div class="drawer" id="drawer">
+      <div class="drawer-handle"><div class="handle"></div></div>
+      <div id="drawerList"></div>
+    </div>
+
+    <div class="mobile-bar">
+      <button class="mb-btn" id="toggleDrawer">Playlist</button>
+      <button class="mb-btn" id="openSort2">Sort</button>
+    </div>
+
+    <!-- Credit Overlay -->
+    <div class="credit-overlay" id="creditOverlay">
+      <div class="credit-content">
+        <div class="credit-background"></div>
+        <div>Ad-free private movie streaming site<br>made by <span style="color:#18fdff">ruwaidcool</span></div>
+        <button class="credit-close" onclick="document.getElementById('creditOverlay').style.display='none'">Close</button>
+      </div>
+    </div>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const splash = document.getElementById('splash');
+        const gate = document.getElementById('gate');
+        let advanced = false;
+        function goToGate() {
+          if (advanced) return;
+          advanced = true;
+          splash.classList.add('fade');
+          setTimeout(() => gate.classList.add('show'), 350);
+        }
+        splash.addEventListener('click', goToGate);
+        setTimeout(goToGate, 1500);
+
+        const validCodes = new Set(["ruwaidcool", "ruwaidnotcool", "ruwaidverycool"]);
+        const gateInput = document.getElementById('gateInput');
+        const gateBtn = document.getElementById('gateBtn');
+        const gateErr = document.getElementById('gateErr');
+        const mainWrap = document.getElementById('mainWrap');
+
+        function tryUnlock() {
+          const code = (gateInput.value || '').trim();
+          if (validCodes.has(code)) {
+            mainWrap.classList.add('unlocked');
+            gate.classList.remove('show');
+          } else {
+            gateErr.textContent = "Invalid invite code.";
+          }
+        }
+        gateBtn.addEventListener('click', tryUnlock);
+        gateInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+
+        const base = [
+            { name: "The Smile Man (2024)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f8fdabe33b661f355258e9/The%20Smile%20Man%202024%20Tamil%20TRUE%20WEB-DL%20-%201080p%20-%20AVC%20-%20DD%2B5.1%20.mkv"},
+            { name: "Kannagi (2023)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f8fefbe33b661f355258ec/%5BKC%5D%20Kannagi%202023%201080p%20AMZN%20WEB%20DL%20HEVC%20DDP5%201%20640k-DDH.mkv"},
+            { name: "The Killer (2023)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f90191e33b661f355258ee/%40WITHa4.The.Killer.2023.1080p.mWa4.x264.NF.WEBRip.1400MB.DDP.mkv"},
+            { name: "Por Thozhil (2023)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f901cfe33b661f355258ef/Por.Thozhil.2023.Tamil.1080p.10bit.SONY.2CH.HEVC.ESub-ALB.mkv"},
+            { name: "Ponman (2025)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f902d7e33b661f355258f1/Ponman%202025%20Tamil%20HQ%20HDRip%20-%201080p%20-%20HEVC%20-%20DD%2B5.1%20-%20192Kbps.mkv"},
+            { name: "Diary (2022)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f8fc6ee33b661f355258e3/Diary.2022.Tamil.1080p.10bit.AHA.6CH.Esub-ALB.mkv"},
+            { name: "Thegidi (2014)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f8fce8e33b661f355258e6/%5BCF%5D%20Thegidi%202014%20Tamil%201080p%20HQ%20HDRip%20X265%20HEVC%20AAC%20950MB.mkv"},
+            { name: "Premalu (2024)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f8fd50e33b661f355258e8/%40CSZMovies%20-%20-%20Premalu%20%282024%29%20Tamil%20HQ%20HDRip%20-%201080p%20-%20x264%20.mkv"},
+            { name: "C V Master (2021)", resolution: "720p", src: "https://tgfilestreambot.koyeb.app/dl/68cbb90688255ba08cccd8cf/@C_V%20Master%20(2021)%20Tamil%20HDRip.mkv"},
+            { name: "DON (2022)", resolution: "720p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68ce84e63bd34c09fff97183"},
+            { name: "Bigil (2019)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68cee2ff3bd34c09fff971a1"},
+            { name: "Petta (2019)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68e2228d4e8ca7bd7aa3ca09"},
+            { name: "Thuppakki (2012)", resolution: "720p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68e93d0756eb9390e470a0b3"},
+            { name: "Remo (2016)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68ea8b7856eb9390e470a24d"},
+            { name: "Varalaru (2006)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f21ea056eb9390e470a8bd"},
+            { name: "Spider-Man (2002)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f3adb86261c3ba5dd98ef8"},
+            { name: "Spider-Man 2 (2004)", resolution: "1080p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f4bc7b6261c3ba5dd98ff0"},
+            { name: "Kantara (2022)", resolution: "720p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f88293e33b661f35525832/Kantara%202022%20HQ%20HDRip%20720p%20x264%20DD%2B5.1%20192Kbps%20Tam%20%2B%20Tel%20%2B%20K.mkv"},
+            { name: "John Luther (2022)", resolution: "720p", src: "https://tgfilestreambot.koyeb.app/dl/68cbb93588255ba08cccd8d1/_John_Luther_2022_Tamil_HQ_HDRip_720p_HEVC_DD+5_1_384Kbps_&_AAC.mkv"},
+            { name: "Paappan (2023)", resolution: "HDRip", src: "https://tgfilestreambot.koyeb.app/dl/68cbf1a988255ba08cccd8f0/@Team_HDT%20-%20Paappan%20(2023)%20HDRip%20Tamil.mkv"},
+            { name: "Anweshippin Kandethum (2024)", resolution: "HQ HDRip", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68d23b743bd34c09fff9783a"},
+            { name: "Identity (2003)", resolution: "720p", src: "https://compressed-estimates-cardiff-class.trycloudflare.com/dl/68f7280d6261c3ba5dd9a143"},
+        ];
+
+        let working = [...base];
+        let filtered = [...base];
+
+        const plyr = new Plyr('#player');
+        const emptyState = document.getElementById('emptyState');
+        const playerHead = document.getElementById('playerHead');
+        const nowTitle = document.getElementById('nowTitle');
+        const nowDownload = document.getElementById('nowDownload');
+
+        function playSource(item) {
+          if (item.src.toLowerCase().endsWith('.mkv')) {
+            window.location.href = 'vlc://' + item.src;
+            return;
+          }
+          plyr.source = { type: 'video', sources: [{ src: item.src, type: 'video/mp4' }] };
+          nowTitle.textContent = `${item.name} • ${item.resolution}`;
+          nowDownload.href = item.src;
+          emptyState.style.display = 'none';
+          playerHead.style.display = 'flex';
+          plyr.play();
+        }
+
+        const heroTitle = document.getElementById('heroTitle');
+        const heroSub = document.getElementById('heroSub');
+        const heroPlay = document.getElementById('heroPlay');
+        const heroDL = document.getElementById('heroDL');
+        const top5El = document.getElementById('top5');
+
+        function setFeatured(item) {
+          heroTitle.textContent = item.name;
+          heroSub.textContent = `Resolution: ${item.resolution}`;
+          heroDL.href = item.src;
+          heroPlay.onclick = () => { playSource(item); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+        }
+
+        function renderTop5(items) {
+          top5El.innerHTML = '';
+          items.slice(0, 5).forEach(item => {
+            const t = document.createElement('div');
+            t.className = 'tcard';
+            t.innerHTML = `<div class="tmeta">${item.name} • ${item.resolution}</div>`;
+            t.addEventListener('click', () => { playSource(item); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+            top5El.appendChild(t);
+          });
+        }
+
+        const playlist = document.getElementById('playlist');
+        const drawer = document.getElementById('drawer');
+        const drawerList = document.getElementById('drawerList');
+        const toggleDrawerBtn = document.getElementById('toggleDrawer');
+        const drawerHandle = drawer.querySelector('.drawer-handle');
+
+        function renderSidebar(items) {
+          playlist.innerHTML = '';
+          items.forEach(it => {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.06); cursor:pointer;';
+            row.textContent = `${it.name} • ${it.resolution}`;
+            row.onclick = () => playSource(it);
+            playlist.appendChild(row);
+          });
+        }
+
+        function renderDrawer(items) {
+          drawerList.innerHTML = '';
+          items.forEach(it => {
+            const row = document.createElement('div');
+            row.className = 'drawer-item';
+            row.textContent = `${it.name} • ${it.resolution}`;
+            row.onclick = () => { playSource(it); drawer.classList.remove('show'); };
+            drawerList.appendChild(row);
+          });
+        }
+
+        toggleDrawerBtn.addEventListener('click', () => drawer.classList.toggle('show'));
+        drawerHandle.addEventListener('click', () => drawer.classList.toggle('show'));
+
+        const cards = document.getElementById('cards');
+        function renderCards(items) {
+          cards.innerHTML = '';
+          items.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'card';
+            el.textContent = `${item.name} • ${item.resolution}`;
+            el.addEventListener('click', () => playSource(item));
+            cards.appendChild(el);
+          });
+        }
+
+        const searchBox = document.getElementById('searchBox');
+        const sortSel = document.getElementById('sortSel');
+
+        function applySearch() {
+          const s = searchBox.value.trim().toLowerCase();
+          filtered = !s ? [...working] : working.filter(x => (x.name.toLowerCase() + ' ' + x.resolution.toLowerCase()).includes(s));
+        }
+
+        function applySort() {
+          const mode = sortSel.value;
+          if (mode === 'az') working.sort((a, b) => a.name.localeCompare(b.name));
+          else if (mode === 'za') working.sort((a, b) => b.name.localeCompare(a.name));
+          else if (mode === 'new') working = [...base].reverse();
+        }
+
+        function refresh() {
+          applySort();
+          applySearch();
+          if (filtered.length) { setFeatured(filtered[0]); renderTop5(filtered); }
+          renderSidebar(filtered);
+          renderDrawer(filtered);
+          renderCards(filtered);
+          emptyState.style.display = 'flex';
+          playerHead.style.display = 'none';
+          try { plyr.stop(); } catch (e) {}
+        }
+
+        refresh();
+        searchBox.addEventListener('input', refresh);
+        sortSel.addEventListener('change', refresh);
+
+        const wrap = document.getElementById('playerWrap');
+        const fillBtn = document.getElementById('fillBtn');
+        let fill = false;
+        fillBtn.addEventListener('click', () => {
+          fill = !fill;
+          wrap.classList.toggle('fill-mode', fill);
+          fillBtn.textContent = fill ? 'Exit Fill' : 'Fill';
+        });
+
+        const creditBtn = document.getElementById('creditBtn');
+        const creditOverlay = document.getElementById('creditOverlay');
+        creditBtn.addEventListener('click', () => {
+          creditOverlay.style.display = 'flex';
+        });
+      });
+    </script>
+  </body>
+</html>
